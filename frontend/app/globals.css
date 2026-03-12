@@ -1,0 +1,76 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import '@rainbow-me/rainbowkit/styles.css';
+
+:root {
+  --background: 240 10% 4%;
+  --foreground: 0 0% 100%;
+  
+  --card: 240 10% 6%;
+  --card-foreground: 0 0% 100%;
+  
+  --primary: 180 100% 50%; /* Electric Cyan */
+  --secondary: 280 100% 60%; /* Vibrant Purple */
+  --accent: 330 100% 60%; /* Hot Pink */
+  
+  --glass: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+}
+
+body {
+  background-color: hsl(var(--background));
+  color: hsl(var(--foreground));
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+}
+
+@layer components {
+  .glass-card {
+    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl;
+  }
+  
+  .glass-panel {
+    @apply bg-black/40 backdrop-blur-lg border-b border-white/5;
+  }
+  
+  .neon-text-primary {
+    text-shadow: 0 0 10px hsla(180, 100%, 50%, 0.5);
+  }
+  
+  .neon-border-primary {
+    box-shadow: 0 0 15px hsla(180, 100%, 50%, 0.2);
+  }
+
+  .btn-primary {
+    @apply bg-cyan-500 text-black font-bold py-2 px-6 rounded-xl hover:bg-cyan-400 transition-all duration-300 shadow-lg shadow-cyan-500/20 active:scale-95;
+  }
+
+  .gradient-text {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 font-bold;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: hsl(var(--background));
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.gradient-bg {
+  background: radial-gradient(circle at 50% 50%, rgba(0, 242, 254, 0.05) 0%, transparent 50%),
+              radial-gradient(circle at 10% 10%, rgba(131, 58, 180, 0.05) 0%, transparent 40%);
+}

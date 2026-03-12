@@ -1,0 +1,41 @@
+# Foundry
+cache/
+out/
+.gas-snapshot
+foundry.lock
+
+# Broadcast logs
+broadcast/
+!/broadcast
+/broadcast/*/31337/
+/broadcast/**/dry-run/
+
+# Dependencies
+lib/
+
+# Environment and Secrets
+.env
+.env.local
+.env.example
+*.key
+*.pem
+
+# IDEs and Editors
+.vscode/
+.idea/
+.DS_Store
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+frontend/build/
+frontend/*.tsbuildinfo
+frontend/next-env.d.ts
+
+# Agents and Temporary Data
+.agents/
+.gemini/
+*.docx
+*.pdf
+islands/
