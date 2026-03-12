@@ -1,8 +1,18 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
 
 @import '@rainbow-me/rainbowkit/styles.css';
+
+@theme {
+  --color-background: hsl(240 10% 4%);
+  --color-foreground: hsl(0 0% 100%);
+  
+  --color-card: hsl(240 10% 6%);
+  --color-card-foreground: hsl(0 0% 100%);
+  
+  --color-primary-cyan: hsl(180 100% 50%);
+  --color-secondary-purple: hsl(280 100% 60%);
+  --color-accent-pink: hsl(330 100% 60%);
+}
 
 :root {
   --background: 240 10% 4%;
@@ -11,45 +21,67 @@
   --card: 240 10% 6%;
   --card-foreground: 0 0% 100%;
   
-  --primary: 180 100% 50%; /* Electric Cyan */
-  --secondary: 280 100% 60%; /* Vibrant Purple */
-  --accent: 330 100% 60%; /* Hot Pink */
+  --primary: 180 100% 50%;
+  --secondary: 280 100% 60%;
+  --accent: 330 100% 60%;
   
   --glass: rgba(255, 255, 255, 0.03);
   --glass-border: rgba(255, 255, 255, 0.1);
 }
 
 body {
-  background-color: hsl(var(--background));
-  color: hsl(var(--foreground));
+  background-color: var(--color-background);
+  color: var(--color-foreground);
   font-family: 'Inter', sans-serif;
   overflow-x: hidden;
 }
 
-@layer components {
-  .glass-card {
-    @apply bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl shadow-xl;
-  }
-  
-  .glass-panel {
-    @apply bg-black/40 backdrop-blur-lg border-b border-white/5;
-  }
-  
-  .neon-text-primary {
-    text-shadow: 0 0 10px hsla(180, 100%, 50%, 0.5);
-  }
-  
-  .neon-border-primary {
-    box-shadow: 0 0 15px hsla(180, 100%, 50%, 0.2);
-  }
+@utility glass-card {
+  background-color: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 1rem;
+  box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
 
-  .btn-primary {
-    @apply bg-cyan-500 text-black font-bold py-2 px-6 rounded-xl hover:bg-cyan-400 transition-all duration-300 shadow-lg shadow-cyan-500/20 active:scale-95;
-  }
+@utility glass-panel {
+  background-color: rgba(0, 0, 0, 0.4);
+  backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
 
-  .gradient-text {
-    @apply bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-600 font-bold;
-  }
+@utility neon-text-primary {
+  text-shadow: 0 0 10px hsla(180, 100%, 50%, 0.5);
+}
+
+@utility neon-border-primary {
+  box-shadow: 0 0 15px hsla(180, 100%, 50%, 0.2);
+}
+
+@utility btn-primary {
+  background-color: var(--color-primary-cyan);
+  color: #000;
+  font-weight: 700;
+  padding: 0.5rem 1.5rem;
+  border-radius: 0.75rem;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 10px 15px -3px rgba(6, 182, 212, 0.2);
+}
+
+@utility btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+@utility btn-primary:active {
+  transform: scale(0.95);
+}
+
+@utility gradient-text {
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+  background-image: linear-gradient(to right, #22d3ee, #3b82f6, #9333ea);
+  font-weight: 700;
 }
 
 /* Custom Scrollbar */
@@ -58,7 +90,7 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: hsl(var(--background));
+  background: var(--color-background);
 }
 
 ::-webkit-scrollbar-thumb {

@@ -22,7 +22,7 @@ export default function Home() {
         
         <div className="w-full lg:w-96 glass-card p-6 border-cyan-500/20 shadow-cyan-500/5">
           <HealthFactorBar value={1.85} />
-          <div className="mt-6 pt-6 border-t border-white/5 grid grid-cols-2 gap-4">
+          <div className="mt-6 pt-6 border-t border-zinc-800 grid grid-cols-2 gap-4">
             <div>
               <div className="text-[10px] font-bold text-white/30 uppercase tracking-widest">Borrow Power</div>
               <div className="text-lg font-bold text-white">62.5%</div>
@@ -72,7 +72,7 @@ export default function Home() {
       
       {/* Protocol Quick Links */}
       <section className="grid grid-cols-1 md:grid-cols-3 gap-6 opacity-80 hover:opacity-100 transition-opacity">
-        <div className="glass-card p-6 flex items-center gap-4 cursor-pointer hover:bg-white/5">
+        <div className="glass-card p-6 flex items-center gap-4 cursor-pointer hover:bg-zinc-800">
           <div className="w-12 h-12 rounded-xl bg-cyan-500/10 flex items-center justify-center text-cyan-400">
             <Zap size={24} />
           </div>
@@ -82,7 +82,7 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="glass-card p-6 flex items-center gap-4 cursor-pointer hover:bg-white/5">
+        <div className="glass-card p-6 flex items-center gap-4 cursor-pointer hover:bg-zinc-800">
           <div className="w-12 h-12 rounded-xl bg-purple-500/10 flex items-center justify-center text-purple-400">
             <TrendingUp size={24} />
           </div>
@@ -92,7 +92,7 @@ export default function Home() {
           </div>
         </div>
         
-        <div className="glass-card p-6 flex items-center gap-4 cursor-pointer hover:bg-white/5">
+        <div className="glass-card p-6 flex items-center gap-4 cursor-pointer hover:bg-zinc-800">
           <div className="w-12 h-12 rounded-xl bg-rose-500/10 flex items-center justify-center text-rose-400">
             <ShieldCheck size={24} />
           </div>

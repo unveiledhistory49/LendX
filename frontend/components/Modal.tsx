@@ -34,14 +34,14 @@ export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
       />
       
       {/* Content */}
-      <div className="relative w-full max-w-md glass-card border-white/10 shadow-2xl animate-in zoom-in-95 duration-200">
-        <div className="flex justify-between items-center p-6 border-b border-white/5">
+      <div className="relative w-full max-w-md glass-card border-zinc-800 shadow-2xl animate-in zoom-in-95 duration-200">
+        <div className="flex justify-between items-center p-6 border-b border-zinc-900">
           <h3 className="text-xl font-bold tracking-tight">{title}</h3>
           <button 
             onClick={onClose}
-            className="p-1 hover:bg-white/5 rounded-full transition-colors"
+            className="p-1 hover:bg-zinc-800 rounded-full transition-colors"
           >
-            <X size={20} className="text-white/40 hover:text-white" />
+            <X size={20} className="text-zinc-500 hover:text-white" />
           </button>
         </div>
         

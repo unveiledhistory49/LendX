@@ -78,7 +78,7 @@ export const ActionModal = ({ isOpen, onClose, type, asset }: ActionModalProps) 
       <div className="space-y-6">
         {/* Balance Info */}
         <div className="flex justify-between items-center text-sm">
-          <span className="text-white/40">Available Balance</span>
+          <span className="text-zinc-500">Available Balance</span>
           <span className="text-white font-medium">
             {balanceData ? `${parseFloat(formatUnits(balanceData.value, asset.decimals)).toFixed(4)} ${asset.symbol}` : '0.00'}
           </span>
@@ -91,7 +91,7 @@ export const ActionModal = ({ isOpen, onClose, type, asset }: ActionModalProps) 
             value={amount}
             onChange={(e) => setAmount(e.target.value)}
             placeholder="0.00"
-            className="w-full h-16 bg-white/5 border border-white/10 rounded-2xl px-6 text-2xl font-bold text-white focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-white/10"
+            className="w-full h-16 bg-zinc-900 border border-zinc-800 rounded-2xl px-6 text-2xl font-bold text-white focus:outline-none focus:border-cyan-500/50 transition-all placeholder:text-zinc-700"
           />
           <button 
             onClick={() => setAmount(balanceData ? formatUnits(balanceData.value, asset.decimals) : '0')}
@@ -135,7 +135,7 @@ export const ActionModal = ({ isOpen, onClose, type, asset }: ActionModalProps) 
         )}
 
         {/* Protocol Note */}
-        <div className="flex gap-3 p-4 bg-white/5 rounded-xl text-white/40">
+        <div className="flex gap-3 p-4 bg-zinc-900 rounded-xl text-zinc-500">
           <Info size={16} className="shrink-0" />
           <p className="text-[10px] leading-relaxed">
             Please ensure you have enough network fees (ETH) to cover the transaction. 
@@ -149,7 +149,7 @@ export const ActionModal = ({ isOpen, onClose, type, asset }: ActionModalProps) 
           disabled={isPending || !amount || parseFloat(amount) <= 0}
           className={`w-full h-14 rounded-2xl font-black uppercase tracking-widest transition-all active:scale-[0.98] ${
             isPending || !amount || parseFloat(amount) <= 0
-              ? 'bg-white/5 text-white/20 cursor-not-allowed'
+              ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
               : 'bg-cyan-500 text-black hover:bg-cyan-400 shadow-lg shadow-cyan-500/20'
           }`}
         >

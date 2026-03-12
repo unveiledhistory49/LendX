@@ -47,7 +47,7 @@ export default function RootLayout({
             {children}
           </main>
           
-          <footer className="mt-20 border-t border-white/5 py-12 px-6">
+          <footer className="mt-20 border-t border-zinc-800 py-12 px-6">
             <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center gap-8">
               <div className="flex items-center gap-2 grayscale hover:grayscale-0 transition-all opacity-50 hover:opacity-100">
                 <div className="w-6 h-6 bg-cyan-500 rounded flex items-center justify-center">
