@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useSyncExternalStore } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 
@@ -12,16 +12,19 @@ interface ModalProps {
 }
 
 export const Modal = ({ isOpen, onClose, title, children }: ModalProps) => {
-  const [mounted, setMounted] = useState(false);
+  const mounted = useSyncExternalStore(
+    () => () => {},
+    () => true,
+    () => false
+  );
 
   useEffect(() => {
-    setMounted(true);
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
+    if (!mounted) return;
+    document.body.style.overflow = isOpen ? 'hidden' : 'unset';
+    return () => {
       document.body.style.overflow = 'unset';
-    }
-  }, [isOpen]);
+    };
+  }, [isOpen, mounted]);
 
   if (!mounted || !isOpen) return null;
 
