@@ -4,8 +4,8 @@ import React, { useState } from 'react';
 import { Modal } from './Modal';
 import { useWriteContract, useAccount, useBalance, useChainId } from 'wagmi';
 import { parseUnits, formatUnits } from 'viem';
-import { getAddresses } from '../lib/constants';
-import { LENDING_POOL_ABI } from '../lib/abis';
+import { getAddresses } from '@/lib/constants';
+import { LENDING_POOL_ABI } from '@/lib/abis';
 import { AlertCircle, CheckCircle2, Loader2, Info } from 'lucide-react';
 
 export type ActionType = 'Supply' | 'Borrow' | 'Repay' | 'Withdraw';

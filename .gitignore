@@ -11,7 +11,7 @@ broadcast/
 /broadcast/**/dry-run/
 
 # Dependencies
-lib/
+/lib/
 
 # Environment and Secrets
 .env
