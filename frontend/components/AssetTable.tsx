@@ -1,5 +1,5 @@
 import { ActionModal, ActionType } from './ActionModal';
-import { getAddresses } from '@/lib/constants';
+import { getAddresses } from '../lib/constants';
 import { useChainId } from 'wagmi';
 import { useState } from 'react';
 
