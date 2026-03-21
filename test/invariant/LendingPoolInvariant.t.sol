@@ -181,43 +181,40 @@ contract LendingPoolInvariantTest is Test {
         targetContract(address(handler));
     }
 
-    /// @notice INVARIANT 1: Protocol solvency — the pool's ERC-20 balance should always
-    ///         be >= total aToken supply minus total debt tokens (at any point in time)
-    /// @dev This ensures the pool never becomes insolvent — it always has enough
-    ///      underlying to cover withdrawals (ignoring interest timing)
+    /// @notice INVARIANT 1: Protocol solvency — pool balance covers deposits minus borrows
     function invariant_ProtocolSolvency_WETH() public view {
+        ILendingPool.ReserveData memory reserve = pool.getReserveData(address(weth));
         uint256 poolBalance = weth.balanceOf(address(pool));
-        // Pool balance should always be non-negative (it's uint256, always true)
-        // But more importantly, if there are aTokens, pool must have corresponding reserves
-        assertGe(poolBalance, 0, "Pool WETH balance must be >= 0");
+        uint256 totalBorrows = debtWETH.totalSupplyWithIndex(reserve.variableBorrowIndex);
+        // Pool holds underlying + what's been borrowed out — always >= 0 after borrows leave
+        // Real check: pool balance + outstanding borrows >= aToken obligations
+        uint256 totalObligations = aWETH.totalSupplyWithIndex(reserve.liquidityIndex);
+        assertGe(poolBalance + totalBorrows, totalObligations - 1e9, "WETH: pool insolvent");
     }
 
-    /// @notice INVARIANT 2: aToken scaled supply should be consistent
-    /// @dev The total scaled supply should match the sum of individual scaled balances
+    /// @notice INVARIANT 2: aToken supply consistency — scaled supply matches pool accounting
     function invariant_ATokenSupplyConsistency() public view {
-        // The pool's USDC balance should be >= availableLiquidity for the reserve
-        // (total deposits - total borrows should roughly equal pool balance, modulo interest)
-        uint256 poolUSDC = usdc.balanceOf(address(pool));
-        assertGe(poolUSDC, 0, "Pool USDC balance must be >= 0");
+        ILendingPool.ReserveData memory reserve = pool.getReserveData(address(usdc));
+        uint256 poolBalance = usdc.balanceOf(address(pool));
+        uint256 totalBorrows = debtUSDC.totalSupplyWithIndex(reserve.variableBorrowIndex);
+        uint256 aTokenObligations = aUSDC.totalSupplyWithIndex(reserve.liquidityIndex);
+        // poolBalance + totalBorrows should approximately equal total aToken obligations
+        assertGe(poolBalance + totalBorrows + 1e9, aTokenObligations, "USDC: aToken supply mismatch");
     }
 
-    /// @notice INVARIANT 3: Ghost variable tracking — supply calls should always be >= borrow calls
-    /// @dev You can't borrow without supplying first (even if it's a different user supplying)
+    /// @notice INVARIANT 3: Borrows require prior supply
     function invariant_SupplyBeforeBorrow() public view {
-        // If there are borrow calls, there must have been supply calls first
         if (handler.ghost_borrowCalls() > 0) {
             assertGt(handler.ghost_supplyCalls(), 0, "Must supply before borrowing");
         }
     }
 
-    /// @notice INVARIANT 4: Total ghost supply should be >= ghost borrows (basic accounting)
+    /// @notice INVARIANT 4: Total borrows can never exceed total deposits (ghost tracking)
     function invariant_SupplyGreaterThanBorrow() public view {
-        // Simple solvency check: total supplied (ghost) should generally be >= total borrowed (ghost)
-        // We add 1e27 to handle small rounding/interest differences if needed, but here it's simple
         assertGe(
-            handler.ghost_totalSuppliedUSDC() + 1e18, // buffer
+            handler.ghost_totalSuppliedUSDC(),
             handler.ghost_totalBorrowedUSDC(),
-            "Total supply should be >= total borrows"
+            "Borrows exceed deposits"
         );
     }
 

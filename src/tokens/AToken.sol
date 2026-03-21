@@ -148,12 +148,15 @@ contract AToken is ERC20, IAToken {
         uint256 scaledBalance = _scaledBalances[user];
         if (scaledBalance == 0) return 0;
 
-        // Query the pool for the current liquidity index
-        (, , , , , , , , , , , , address aTokenAddr, , ) = _getReserveDataFromPool();
-        // If we can't determine the index (e.g., during construction), return scaled balance
-        if (aTokenAddr == address(0)) return scaledBalance;
+        try IPoolForIndex(POOL).getReserveData(UNDERLYING_ASSET_ADDRESS) returns (
+            IPoolForIndex.ReserveDataView memory data
+        ) {
+            if (data.liquidityIndex > 0) {
+                return scaledBalance.rayMul(uint256(data.liquidityIndex));
+            }
+        } catch {}
 
-        return scaledBalance; // Fallback: in practice, use balanceOfWithIndex for accurate values
+        return scaledBalance; // safe fallback during construction only
     }
 
     /// @notice Returns the balance with a given liquidity index applied
@@ -195,30 +198,7 @@ contract AToken is ERC20, IAToken {
     //                  INTERNAL FUNCTIONS
     // ============================================================
 
-    /// @dev Attempts to get reserve data from the pool to find the current index.
-    ///      Returns default values if the call fails.
-    function _getReserveDataFromPool() private view returns (
-        uint128, uint128, uint128, uint128, uint40,
-        uint16, uint16, uint16, uint16,
-        bool, bool, bool,
-        address, address, address
-    ) {
-        // This is a best-effort call — if it fails, we return defaults
-        try IPoolForIndex(POOL).getReserveData(UNDERLYING_ASSET_ADDRESS) returns (
-            IPoolForIndex.ReserveDataView memory data
-        ) {
-            return (
-                data.liquidityIndex, data.variableBorrowIndex,
-                data.currentLiquidityRate, data.currentVariableBorrowRate,
-                data.lastUpdateTimestamp,
-                data.ltv, data.liquidationThreshold, data.liquidationBonus, data.reserveFactor,
-                data.active, data.frozen, data.borrowingEnabled,
-                data.aTokenAddress, data.debtTokenAddress, data.interestRateStrategy
-            );
-        } catch {
-            return (0, 0, 0, 0, 0, 0, 0, 0, 0, false, false, false, address(0), address(0), address(0));
-        }
-    }
+
 }
 
 /// @dev Minimal interface just to get the reserve data for index lookup
