@@ -43,7 +43,7 @@ export const ADDRESSES: Record<number, ChainAddresses> = {
   }
 } as const;
 
-const anvil: Chain = {
+export const anvil: Chain = {
   id: 31337,
   name: "Anvil Localhouse",
   nativeCurrency: {
@@ -53,7 +53,6 @@ const anvil: Chain = {
   },
   rpcUrls: {
     default: { http: ["http://127.0.0.1:8545"] },
-    public: { http: ["http://127.0.0.1:8545"] },
   },
 };
 
