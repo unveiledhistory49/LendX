@@ -81,6 +81,9 @@ contract LendingPoolTest is Test {
     uint256 public constant USDC_PRICE = 1e18;
 
     function setUp() public {
+        // Set realistic timestamp to prevent oracle staleness issues if tests warp time
+        vm.warp(100_000);
+
         // 1. Deploy tokens
         weth = new MockERC20("Wrapped Ether", "WETH", 18);
         usdc = new MockERC20("USD Coin", "USDC", 18);

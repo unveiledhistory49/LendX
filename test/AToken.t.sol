@@ -165,7 +165,8 @@ contract ATokenTest is Test {
     // ============================================================
 
     function testFuzz_MintAndBurn(uint256 amount, uint256 index) public {
-        amount = bound(amount, 1, 1e30);
+        // Minimum of 1e9 avoids dust deposits where rayDiv(amount, index) rounds to 0
+        amount = bound(amount, 1e9, 1e30);
         index = bound(index, 1e27, 1e36); // Index >= 1 RAY
 
         vm.startPrank(pool);

@@ -78,7 +78,11 @@ contract DebtTokenTest is Test {
 
         assertTrue(isFirst);
         assertEq(debtToken.scaledBalanceOf(user), expectedScaled);
-        assertEq(debtToken.balanceOf(user), expectedScaled); // balanceOf = scaledBalance for DebtToken
+        // balanceOf() falls back to scaledBalance because POOL (address(100)) has no deployed code.
+        // This tests the safe fallback path. The real interest-bearing path is tested via balanceOfWithIndex.
+        assertEq(debtToken.balanceOf(user), expectedScaled, "Fallback: balanceOf == scaledBalance when POOL has no code");
+        // Test the real interest-bearing calculation explicitly:
+        assertEq(debtToken.balanceOfWithIndex(user, index), amount, "balanceOfWithIndex should return original amount");
     }
 
     function test_Revert_Mint_ZeroAmount() public {
