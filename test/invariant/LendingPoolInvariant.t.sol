@@ -200,11 +200,8 @@ contract LendingPoolInvariantTest is Test {
         ILendingPool.ReserveData memory reserve = pool.getReserveData(address(weth));
         uint256 poolBalance = weth.balanceOf(address(pool));
         uint256 totalBorrows = debtWETH.totalSupplyWithIndex(reserve.variableBorrowIndex);
-        // Pool holds underlying + what's been borrowed out — always >= 0 after borrows leave
-        // Real check: pool balance + outstanding borrows >= aToken obligations
         uint256 totalObligations = aWETH.totalSupplyWithIndex(reserve.liquidityIndex);
-        // Use additive tolerance on the left side to avoid underflow when obligations are near zero
-        assertGe(poolBalance + totalBorrows + 1e9, totalObligations, "WETH: pool insolvent");
+        assertGe(poolBalance + totalBorrows, totalObligations - 1e9, "WETH: pool insolvent");
     }
 
     /// @notice INVARIANT 2: aToken supply consistency — scaled supply matches pool accounting
@@ -224,18 +221,12 @@ contract LendingPoolInvariantTest is Test {
         }
     }
 
-    /// @notice INVARIANT 4: Net borrows can never exceed total deposits (ghost tracking)
-    /// @dev Uses net borrows (borrowed - repaid) instead of raw cumulative totals
-    function invariant_SupplyGreaterThanNetBorrow() public view {
-        uint256 totalBorrowed = handler.ghost_totalBorrowedUSDC();
-        uint256 totalRepaid = handler.ghost_totalRepaidUSDC();
-        uint256 netBorrows = totalBorrowed > totalRepaid
-            ? totalBorrowed - totalRepaid
-            : 0;
+    /// @notice INVARIANT 4: Total borrows can never exceed total deposits (ghost tracking)
+    function invariant_SupplyGreaterThanBorrow() public view {
         assertGe(
             handler.ghost_totalSuppliedUSDC(),
-            netBorrows,
-            "Net borrows exceed deposits"
+            handler.ghost_totalBorrowedUSDC(),
+            "Borrows exceed deposits"
         );
     }
 
