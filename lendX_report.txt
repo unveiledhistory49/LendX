@@ -1,0 +1,85 @@
+Same code on both files ¡ª nothing has changed. My original audit stands. Both issues are still present. Let me be precise about exactly what needs to be fixed so you can hand it back to your agent.
+
+---
+
+## The Two Fixes ¡ª Exact Instructions for Your Agent
+
+---
+
+### Fix 1 ¡ª `AToken.balanceOf()` ¡ª Line 142¨C151
+
+**The problem in one line:** `_getReserveDataFromPool()` is called, successfully retrieves the `liquidityIndex`, but the function ignores it and `return scaledBalance` at the end returns the raw un-indexed value regardless.
+
+**Tell your agent to replace this entire function:**
+
+```solidity
+function balanceOf(address user) public view override returns (uint256) {
+    uint256 scaledBalance = _scaledBalances[user];
+    if (scaledBalance == 0) return 0;
+
+    try IPoolForIndex(POOL).getReserveData(UNDERLYING_ASSET_ADDRESS) returns (
+        IPoolForIndex.ReserveDataView memory data
+    ) {
+        if (data.liquidityIndex > 0) {
+            return scaledBalance.rayMul(uint256(data.liquidityIndex));
+        }
+    } catch {}
+
+    return scaledBalance; // safe fallback during construction only
+}
+```
+
+Also delete the `_getReserveDataFromPool()` private function entirely ¡ª it's now unused and the 15-return-value tuple is messy. The `try/catch` above calls `getReserveData` directly and only pulls `liquidityIndex`, which is all that's needed.
+
+---
+
+### Fix 2 ¡ª Invariant Tests ¡ª All Four Invariants
+
+**The problem:** Invariants 1 and 2 assert `x >= 0` on `uint256` (mathematically impossible to fail). Invariant 4 adds a `1e18` buffer that masks real insolvency. None of them actually test protocol correctness.
+
+**Tell your agent to replace the four invariant functions with these:**
+
+```solidity
+/// @notice INVARIANT 1: Protocol solvency ¡ª pool balance covers deposits minus borrows
+function invariant_ProtocolSolvency_WETH() public view {
+    ILendingPool.ReserveData memory reserve = pool.getReserveData(address(weth));
+    uint256 poolBalance = weth.balanceOf(address(pool));
+    uint256 totalBorrows = debtWETH.totalSupplyWithIndex(reserve.variableBorrowIndex);
+    // Pool holds underlying + what's been borrowed out ¡ª always >= 0 after borrows leave
+    // Real check: pool balance + outstanding borrows >= aToken obligations
+    uint256 totalObligations = aWETH.totalSupplyWithIndex(reserve.liquidityIndex);
+    assertGe(poolBalance + totalBorrows, totalObligations - 1e9, "WETH: pool insolvent");
+}
+
+/// @notice INVARIANT 2: aToken supply consistency ¡ª scaled supply matches pool accounting
+function invariant_ATokenSupplyConsistency() public view {
+    ILendingPool.ReserveData memory reserve = pool.getReserveData(address(usdc));
+    uint256 poolBalance = usdc.balanceOf(address(pool));
+    uint256 totalBorrows = debtUSDC.totalSupplyWithIndex(reserve.variableBorrowIndex);
+    uint256 aTokenObligations = aUSDC.totalSupplyWithIndex(reserve.liquidityIndex);
+    // poolBalance + totalBorrows should approximately equal total aToken obligations
+    assertGe(poolBalance + totalBorrows + 1e9, aTokenObligations, "USDC: aToken supply mismatch");
+}
+
+/// @notice INVARIANT 3: Borrows require prior supply
+function invariant_SupplyBeforeBorrow() public view {
+    if (handler.ghost_borrowCalls() > 0) {
+        assertGt(handler.ghost_supplyCalls(), 0, "Must supply before borrowing");
+    }
+}
+
+/// @notice INVARIANT 4: Total borrows can never exceed total deposits (ghost tracking)
+function invariant_SupplyGreaterThanBorrow() public view {
+    assertGe(
+        handler.ghost_totalSuppliedUSDC(),
+        handler.ghost_totalBorrowedUSDC(),
+        "Borrows exceed deposits"
+    );
+}
+```
+
+Note on Invariant 4: the `+ 1e18` buffer is removed. If borrows somehow exceed deposits the invariant should catch it, not paper over it.
+
+---
+
+Those are the only two things wrong. Everything else ¡ª architecture, security, oracle, interest model, liquidation, flash loans, NatSpec, CEI, test structure, foundry config, deployment ¡ª is solid. Fix these two and it's done.

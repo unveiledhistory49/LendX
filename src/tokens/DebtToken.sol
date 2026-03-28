@@ -162,11 +162,28 @@ contract DebtToken is ERC20, IDebtToken {
     //                    VIEW FUNCTIONS
     // ============================================================
 
-    /// @notice Returns the scaled balance (stored value before index multiplication)
+    /// @notice Returns the debt balance including accrued interest
+    /// @dev Queries the pool for the current variable borrow index to compute real debt.
+    ///      balanceOf = scaledBalance × variableBorrowIndex / RAY
     /// @param user The address of the user
-    /// @return The user's current debt balance (scaled)
+    /// @return The user's current debt balance including interest
     function balanceOf(address user) public view override returns (uint256) {
-        return _scaledBalances[user];
+        uint256 scaledBalance = _scaledBalances[user];
+        if (scaledBalance == 0) return 0;
+
+        // Query the pool for the current variable borrow index
+        // Guard: try/catch doesn't catch calls to non-contract addresses
+        if (POOL.code.length > 0) {
+            try IPoolForBorrowIndex(POOL).getReserveData(UNDERLYING_ASSET_ADDRESS) returns (
+                IPoolForBorrowIndex.ReserveDataView memory data
+            ) {
+                if (data.variableBorrowIndex > 0) {
+                    return scaledBalance.rayMul(data.variableBorrowIndex);
+                }
+            } catch {}
+        }
+
+        return scaledBalance; // safe fallback during construction or unit tests
     }
 
     /// @notice Returns the debt balance with a given borrow index applied
@@ -203,3 +220,27 @@ contract DebtToken is ERC20, IDebtToken {
         return _scaledTotalSupply.rayMul(index);
     }
 }
+
+/// @dev Minimal interface just to get the reserve data for borrow index lookup
+interface IPoolForBorrowIndex {
+    struct ReserveDataView {
+        uint128 liquidityIndex;
+        uint128 variableBorrowIndex;
+        uint128 currentLiquidityRate;
+        uint128 currentVariableBorrowRate;
+        uint40 lastUpdateTimestamp;
+        uint16 ltv;
+        uint16 liquidationThreshold;
+        uint16 liquidationBonus;
+        uint16 reserveFactor;
+        bool active;
+        bool frozen;
+        bool borrowingEnabled;
+        address aTokenAddress;
+        address debtTokenAddress;
+        address interestRateStrategy;
+    }
+
+    function getReserveData(address asset) external view returns (ReserveDataView memory);
+}
+

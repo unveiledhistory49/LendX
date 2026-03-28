@@ -1,0 +1,540 @@
+# LendX Frontend ¡ª Complete UI Specification for Agent
+
+---
+
+## 1. Stack & Dependencies
+
+```json
+{
+  "dependencies": {
+    "react": "^18.3.0",
+    "react-dom": "^18.3.0",
+    "wagmi": "^2.x",
+    "viem": "^2.x",
+    "@rainbow-me/rainbowkit": "^2.x",
+    "@tanstack/react-query": "^5.x",
+    "tailwindcss": "^3.x"
+  }
+}
+```
+
+**Vite** as bundler. **TypeScript** throughout. No component libraries beyond RainbowKit ¡ª all UI is hand-built with Tailwind.
+
+---
+
+## 2. Contract Integration Map
+
+Every contract call in the UI must map to a real deployed function. The agent must wire all of these ¡ª no stubbed buttons.
+
+```
+LendingPool (Sepolia: 0xCCe7623c811d97f4bef16C99e95419Cb0C96FB30)
+©À©¤©¤ READ
+©¦   ©À©¤©¤ getUserAccountData(address) ¡ú dashboard stats + health factor
+©¦   ©À©¤©¤ getReserveData(address asset) ¡ú APY, rates, active status
+©¦   ©À©¤©¤ getAssetPrice(address asset) ¡ú live prices
+©¦   ©¸©¤©¤ getReservesList() ¡ú list of supported assets
+©¦
+©À©¤©¤ WRITE
+©¦   ©À©¤©¤ supply(asset, amount, onBehalfOf)
+©¦   ©À©¤©¤ withdraw(asset, amount, to)
+©¦   ©À©¤©¤ borrow(asset, amount)
+©¦   ©À©¤©¤ repay(asset, amount, onBehalfOf)
+©¦   ©À©¤©¤ liquidate(collateralAsset, debtAsset, borrower, debtToCover)
+©¦   ©¸©¤©¤ flashLoan(receiver, asset, amount, params)
+©¦
+ERC20 (per asset)
+©¦   ©¸©¤©¤ approve(spender, amount) ¡ú must be called before supply/repay
+©¦
+AToken (per asset)
+©¦   ©¸©¤©¤ balanceOfWithIndex(user, index) ¡ú actual supplied balance with interest
+©¦
+DebtToken (per asset)
+©¦   ©¸©¤©¤ balanceOfWithIndex(user, index) ¡ú actual debt with interest
+```
+
+---
+
+## 3. Global Config File
+
+```typescript
+// src/config/contracts.ts
+
+export const SUPPORTED_ASSETS = [
+  {
+    symbol: "WETH",
+    name: "Wrapped Ether",
+    address: "0x...",           // MockWETH on Sepolia
+    aTokenAddress: "0x...",
+    debtTokenAddress: "0x...",
+    decimals: 18,
+    color: "#627EEA",
+    icon: "?"
+  },
+  {
+    symbol: "WBTC",
+    name: "Wrapped Bitcoin",
+    address: "0x...",
+    aTokenAddress: "0x...",
+    debtTokenAddress: "0x...",
+    decimals: 18,
+    color: "#F7931A",
+    icon: "?"
+  },
+  {
+    symbol: "USDC",
+    name: "USD Coin",
+    address: "0x...",
+    aTokenAddress: "0x...",
+    debtTokenAddress: "0x...",
+    decimals: 18,
+    color: "#2775CA",
+    icon: "$"
+  },
+  {
+    symbol: "LINK",
+    name: "Chainlink",
+    address: "0x...",
+    aTokenAddress: "0x...",
+    debtTokenAddress: "0x...",
+    decimals: 18,
+    color: "#375BD2",
+    icon: "?"
+  }
+]
+
+export const LENDING_POOL_ADDRESS = "0xCCe7623c811d97f4bef16C99e95419Cb0C96FB30"
+export const PRICE_ORACLE_ADDRESS = "0x00472C0dA2a058D52cB577dC009890050D1F401B"
+export const CHAIN_ID = 11155111 // Sepolia
+```
+
+---
+
+## 4. Layout Structure
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦                     HEADER                          ©¦
+©¦  [LendX Logo]   [ETH: $X,XXX]   [Connect Wallet]   ©¦
+©À©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©È
+©¦                  DASHBOARD ROW                      ©¦
+©¦  [Total Supplied]  [Total Borrowed]  [Net APY]      ©¦
+©¦  ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤  ©¦
+©¦               HEALTH FACTOR BAR                     ©¦
+©À©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©È
+©¦              ASSET POSITIONS TABLE                  ©¦
+©¦  Your Supplies              Your Borrows            ©¦
+©À©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©È
+©¦                  ACTION TABS                        ©¦
+©¦  [Supply] [Borrow] [Repay] [Withdraw] [Liquidate]  ©¦
+©¦  ©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤  ©¦
+©¦                  ACTIVE TAB PANEL                   ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+---
+
+## 5. Header
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  ? LendX          ETH $2,341.20 ?        [0x1a...] ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+**Elements:**
+- Logo: "? LendX" in white bold, left-aligned
+- ETH price: pulled from `PriceOracle.getAssetPrice(WETH_ADDRESS)`, polled every 30 seconds using `useReadContract` with `watch: true`. Format: `ETH $2,341.20`. Show a subtle spinning icon while refreshing.
+- Right side: RainbowKit `<ConnectButton />` ¡ª use the default RainbowKit button, no custom styling needed
+- Background: dark (`#0f1117` or `bg-gray-950`)
+- Sticky ¡ª stays at top on scroll
+
+**Chain guard:** If wallet is connected to the wrong network, show a red banner below the header: `? Please switch to Ethereum Sepolia to use LendX` with a "Switch Network" button that calls `switchChain`.
+
+---
+
+## 6. Dashboard Row
+
+Shown only when wallet is connected. Pulls from `getUserAccountData(connectedAddress)`.
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´ ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´ ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  Total Supplied  ©¦ ©¦  Total Borrowed  ©¦ ©¦    Net APY       ©¦
+©¦   $12,430.00     ©¦ ©¦    $4,200.00     ©¦ ©¦     3.2%         ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼ ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼ ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+- **Total Supplied**: `totalCollateralUSD` from `getUserAccountData`, formatted as USD
+- **Total Borrowed**: `totalDebtUSD`, formatted as USD
+- **Net APY**: calculated as `(sum of supplied_amount ¡Á liquidityRate) - (sum of borrowed_amount ¡Á borrowRate)` across all positions, expressed as a percentage. Show green if positive, red if negative.
+- Cards: dark background (`bg-gray-900`), subtle border, white label text, large number in white
+
+---
+
+## 7. Health Factor Bar ¡ª Full Specification
+
+This is the visual centrepiece. It must be a dedicated `<HealthFactorBar />` component.
+
+```
+Health Factor
+©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥
+[¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€??????????????] 1.42
+©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥©¥
+```
+
+**States:**
+
+| Health Factor | Bar Color | Numeric Color | Behaviour |
+|---|---|---|---|
+| > 1.5 | Green (`#22c55e`) | Green | Static |
+| 1.0 ¨C 1.5 | Yellow (`#eab308`) | Yellow | Static |
+| < 1.0 | Red (`#ef4444`) | Red | Pulsing animation |
+| No debt | ¡ª | Gray | Show "N/A ¡ª No open borrows" |
+| Not connected | ¡ª | Gray | Show "Connect wallet to view" |
+
+**LIQUIDATABLE banner:** When health factor < 1.0, show a full-width red alert bar above the action tabs:
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  ?  YOUR POSITION IS LIQUIDATABLE                   ©¦
+©¦     Add collateral or repay debt immediately        ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+**Bar width calculation:**
+```typescript
+// Cap display at 3.0 ¡ª anything above is 100% full bar
+const clampedHF = Math.min(healthFactor, 3.0)
+const widthPercent = (clampedHF / 3.0) * 100
+```
+
+**Liquidation threshold marker:** Draw a thin vertical line at the 33% mark (representing HF = 1.0) so users can see how close they are to liquidation even when safe.
+
+---
+
+## 8. Asset Positions Table
+
+Two side-by-side tables, shown only when connected and user has positions.
+
+```
+Your Supplies                    Your Borrows
+©°©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©´       ©°©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©´
+©¦Asset ©¦ Balance ©¦  APY ©¦       ©¦Asset ©¦  Debt   ©¦ APR  ©¦
+©À©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©È       ©À©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©È
+©¦ WETH ©¦ 2.43    ©¦ 1.8% ©¦       ©¦ USDC ©¦4,200.00 ©¦ 3.2% ©¦
+©¦ USDC ©¦10,000   ©¦ 2.1% ©¦       ©¸©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¼
+©¸©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¼
+```
+
+- **Supplies balance**: from `AToken.balanceOfWithIndex(user, reserve.liquidityIndex)` ¡ª shows accrued interest in real time
+- **Borrows debt**: from `DebtToken.balanceOfWithIndex(user, reserve.variableBorrowIndex)` ¡ª shows growing debt in real time
+- **APY/APR**: from `getReserveData(asset).currentLiquidityRate` and `currentVariableBorrowRate`, converted from RAY to percentage: `rate / 1e27 * 100`
+- If no supplies: show "No supplied assets yet"
+- If no borrows: show "No open borrow positions"
+- Balances refresh every 15 seconds
+
+---
+
+## 9. Action Tabs
+
+Five tabs: **Supply | Borrow | Repay | Withdraw | Liquidate**
+
+Tab bar styling: dark background, active tab has white text and a bottom border in the protocol accent color. Inactive tabs are gray.
+
+---
+
+### Tab 1: Supply
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  Asset                                  ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ ? WETH                      ?  ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  Amount                                 ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ 0.00                    [MAX]   ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦  Wallet balance: 1.234 WETH             ©¦
+©¦                                         ©¦
+©¦  Supply APY: 1.82%                      ©¦
+©¦  You will receive: 0.00 aWETH           ©¦
+©¦                                         ©¦
+©¦  [    Approve WETH    ]                 ©¦
+©¦  [     Supply WETH    ]                 ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+**Logic:**
+- Asset dropdown: shows all 4 assets with symbol and icon
+- Amount input: numeric, validates > 0 and ¡Ü wallet balance
+- MAX button: fills input with full wallet balance
+- "Wallet balance": from `IERC20.balanceOf(connectedAddress)`
+- "Supply APY": from `getReserveData(asset).currentLiquidityRate` converted from RAY
+- "You will receive": same as amount (1:1 at deposit time, interest accrues after)
+- **Approve button**: calls `ERC20.approve(LENDING_POOL_ADDRESS, amount)`. Disabled if allowance already sufficient. Shows "Approved ?" when done.
+- **Supply button**: disabled until approved. Calls `LendingPool.supply(asset, amount, connectedAddress)`. Shows loading spinner during tx. On success: show green toast "Supplied X WETH successfully", refresh balances.
+- Both buttons disabled if not connected or wrong network
+
+---
+
+### Tab 2: Borrow
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  Asset to Borrow                        ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ $ USDC                      ?  ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  Amount                                 ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ 0.00                    [MAX]   ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦  Max borrowable: 8,234.00 USDC          ©¦
+©¦                                         ©¦
+©¦  Borrow APR: 3.24%                      ©¦
+©¦                                         ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ Health Factor After Borrow      ©¦    ©¦
+©¦  ©¦ [¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€???????] 1.42¡ú1.21©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  [        Borrow USDC         ]         ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+**Logic:**
+- "Max borrowable": from `getUserAccountData().availableBorrowsUSD / assetPrice`
+- MAX button: fills with max borrowable for selected asset
+- **Health Factor After Borrow preview**: recalculate HF in real time as user types the amount. Formula: `(totalCollateralUSD * weightedLiqThreshold) / (totalDebtUSD + newBorrowUSD) / 10000`. Update on every keystroke with debounce 300ms.
+- Preview bar uses same colour logic as main health factor bar
+- Show warning text in yellow if projected HF < 1.3: "Warning: this borrow leaves your position close to liquidation"
+- Show error in red and disable button if projected HF < 1.0
+- **Borrow button**: calls `LendingPool.borrow(asset, amount)`. No approval needed for borrowing. On success: green toast, refresh all positions.
+
+---
+
+### Tab 3: Repay
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  Your Open Borrows                      ©¦
+©¦                                         ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´ ©¦
+©¦  ©¦Asset ©¦  Outstanding ©¦     APR      ©¦ ©¦
+©¦  ©À©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©È ©¦
+©¦  ©¦ USDC ©¦ 4,201.34     ©¦    3.24%     ©¦ ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼ ©¦
+©¦                                         ©¦
+©¦  Asset to Repay                         ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ $ USDC                      ?  ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  Amount                                 ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ 0.00                  [FULL]    ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦  Outstanding debt: 4,201.34 USDC        ©¦
+©¦                                         ©¦
+©¦  [    Approve USDC    ]                 ©¦
+©¦  [     Repay USDC     ]                 ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+**Logic:**
+- Open borrows table auto-populates from the user's active borrow positions, with live debt values
+- Asset dropdown only shows assets the user has actually borrowed
+- FULL button: sets amount to `type(uint256).max` which triggers full repayment in the contract
+- **Approve button**: same logic as Supply ¡ª check allowance first, only show if needed
+- **Repay button**: calls `LendingPool.repay(asset, amount, connectedAddress)`. On success: toast, refresh. If full repayment selected, show "Debt fully cleared ?"
+- If no open borrows: show "You have no outstanding debt" and disable both dropdowns
+
+---
+
+### Tab 4: Withdraw
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  Your Supplied Assets                   ©¦
+©¦                                         ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ð©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´ ©¦
+©¦  ©¦Asset ©¦   Supplied   ©¦     APY      ©¦ ©¦
+©¦  ©À©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©à©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©È ©¦
+©¦  ©¦ WETH ©¦    2.431     ©¦    1.82%     ©¦ ©¦
+©¦  ©¦ USDC ©¦ 10,023.40    ©¦    2.10%     ©¦ ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©Ø©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼ ©¦
+©¦                                         ©¦
+©¦  Asset to Withdraw                      ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ ? WETH                      ?  ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  Amount                                 ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ 0.00                    [MAX]   ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦  Available to withdraw: 2.431 WETH      ©¦
+©¦                                         ©¦
+©¦  Health Factor After Withdrawal:        ©¦
+©¦  [¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€¨€???????] 1.42 ¡ú 1.18     ©¦
+©¦                                         ©¦
+©¦  [      Withdraw WETH      ]            ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+**Logic:**
+- Supplied assets table: same data as the positions table above, for quick reference
+- Asset dropdown: only assets the user has supplied
+- MAX button: fills with full aToken balance
+- **Health factor preview**: recalculate in real time as user types. If withdrawal would make HF < 1.0, disable button and show: "Withdrawal would make position liquidatable"
+- No approval needed ¡ª aTokens are burned by the pool directly
+- **Withdraw button**: calls `LendingPool.withdraw(asset, amount, connectedAddress)`. Pass `type(uint256).max` when MAX is selected.
+
+---
+
+### Tab 5: Liquidate
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦  Borrower Address                       ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ 0x...                    [Look up]   ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ ? Health Factor: 0.87          ©¦    ©¦
+©¦  ©¦   Total Collateral: $12,430     ©¦    ©¦
+©¦  ©¦   Total Debt:       $11,820     ©¦    ©¦
+©¦  ©¦   LIQUIDATABLE                  ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  Collateral to Receive                  ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ ? WETH                      ?  ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  Debt Asset to Cover                    ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ $ USDC                      ?  ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦                                         ©¦
+©¦  Debt to Cover (max 50%)                ©¦
+©¦  ©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´    ©¦
+©¦  ©¦ 0.00                  [MAX 50%] ©¦    ©¦
+©¦  ©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼    ©¦
+©¦  Max: 5,910.00 USDC (50% close factor)  ©¦
+©¦                                         ©¦
+©¦  You will receive: ~0.00 WETH           ©¦
+©¦  Liquidation bonus: 5% / 8% / 12%      ©¦
+©¦  (shown based on HF tier)               ©¦
+©¦                                         ©¦
+©¦  [   Approve USDC   ]                   ©¦
+©¦  [  Execute Liquidation  ]              ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+**Logic:**
+- Address input: validates it's a valid Ethereum address
+- **Look up button**: calls `getUserAccountData(inputAddress)`. Displays the position summary card. If HF ¡Ý 1.0: show "This position is healthy and cannot be liquidated" in green. If HF < 1.0: show the red summary card.
+- Collateral dropdown: shows all assets ¡ª user selects what they want to receive
+- Debt dropdown: shows all assets ¡ª user selects which debt to cover
+- MAX 50% button: calculates `totalDebt[debtAsset] * 0.5` and fills the input
+- **"You will receive" preview**: calculate in real time using `debtToCoverUSD * (1 + bonus) / collateralPrice`
+- **Bonus tier display**: show which tier applies based on borrower's HF ¡ª "5% bonus (HF > 0.95)", "8% bonus (HF > 0.80)", or "12% bonus (HF ¡Ü 0.80)"
+- **Approve button**: approve the debt asset spend to the lending pool
+- **Execute Liquidation button**: calls `LendingPool.liquidate(collateralAsset, debtAsset, borrowerAddress, debtToCover)`. On success: show "Liquidation executed. You received X WETH."
+- Entire panel disabled if connected wallet = borrower address being looked up (can't self-liquidate)
+
+---
+
+## 10. Transaction State Machine
+
+Every write button must cycle through these states consistently:
+
+```
+[Idle] ¡ú [Waiting for wallet] ¡ú [Pending on-chain] ¡ú [Success] or [Error]
+```
+
+- **Idle**: normal button, white text
+- **Waiting for wallet**: button shows `Confirm in wallet...` with spinner, disabled
+- **Pending on-chain**: button shows `Processing... ?` with spinner, link to Etherscan tx hash appears below the button: `View on Etherscan ¨J`
+- **Success**: button briefly shows `? Success`, green toast notification appears top-right, all balances refresh
+- **Error**: button resets to idle, red toast shows the error reason (parse the revert reason from the custom error where possible)
+
+---
+
+## 11. Toast Notifications
+
+Top-right corner, auto-dismiss after 5 seconds.
+
+```
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦ ?  Supplied 1.0 WETH        ©¦  ¡û green
+©¦    View on Etherscan ¨J      ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+
+©°©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©´
+©¦ ?  Transaction failed       ©¦  ¡û red
+©¦    Insufficient collateral  ©¦
+©¸©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¤©¼
+```
+
+Parse custom error names from the ABI and map them to human-readable messages:
+- `LendingPool__HealthFactorTooLow` ¡ú "Health factor too low to borrow"
+- `LendingPool__InsufficientCollateral` ¡ú "Insufficient collateral for this borrow"
+- `FlashLoan__NotRepaid` ¡ú "Flash loan not repaid within the transaction"
+- Generic fallback: "Transaction failed ¡ª check your position and try again"
+
+---
+
+## 12. Responsive Layout
+
+- **Desktop (¡Ý1024px)**: full two-column layout ¡ª positions table left, action panel right
+- **Tablet (768¨C1023px)**: single column, positions table stacks above action panel
+- **Mobile (<768px)**: single column, health factor bar stays full width, action panels scroll horizontally as swipeable cards
+
+---
+
+## 13. Colour Palette & Design Tokens
+
+```css
+--bg-primary:    #0f1117   /* page background */
+--bg-card:       #1a1f2e   /* card backgrounds */
+--bg-elevated:   #232839   /* inputs, dropdowns */
+--border:        #2e3548   /* all borders */
+--text-primary:  #ffffff
+--text-secondary:#9ca3af
+--accent:        #3b82f6   /* blue ¡ª buttons, active states */
+--green:         #22c55e   /* healthy, success */
+--yellow:        #eab308   /* caution */
+--red:           #ef4444   /* danger, liquidatable */
+```
+
+Dark mode only. No light mode toggle.
+
+---
+
+## 14. Definition of Done for the Frontend
+
+Before considering the UI complete, verify every item:
+
+- [ ] Wallet connects and disconnects cleanly via RainbowKit
+- [ ] Wrong network banner shows when not on Sepolia
+- [ ] ETH price polls live from oracle every 30 seconds
+- [ ] `getUserAccountData` correctly populates dashboard stats
+- [ ] Health factor bar renders in all 3 colour states
+- [ ] LIQUIDATABLE banner appears when HF < 1.0
+- [ ] All 4 asset positions show with live balances
+- [ ] Supply: approve ¡ú supply flow completes end-to-end on Sepolia
+- [ ] Borrow: health factor preview updates on keystroke
+- [ ] Borrow: blocks submission if projected HF < 1.0
+- [ ] Repay: FULL button passes `type(uint256).max` correctly
+- [ ] Withdraw: health factor preview blocks unsafe withdrawals
+- [ ] Liquidate: look up any address and see their position
+- [ ] Liquidate: bonus tier displays correctly based on HF
+- [ ] All buttons cycle through all 4 transaction states
+- [ ] Etherscan link appears during pending transaction
+- [ ] Custom error messages parse and display correctly
+- [ ] Mobile layout renders without horizontal scroll
+- [ ] All ABIs loaded from `/src/abi/` JSON files, not hardcoded

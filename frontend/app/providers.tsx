@@ -9,19 +9,27 @@ import { config } from '@/lib/wagmi';
 const queryClient = new QueryClient();
 
 export function Providers({ children }: { children: React.ReactNode }) {
+  const [mounted, setMounted] = React.useState(false);
+  
+  React.useEffect(() => {
+    setMounted(true);
+  }, []);
+
   return (
     <WagmiProvider config={config}>
       <QueryClientProvider client={queryClient}>
-        <RainbowKitProvider
-          theme={darkTheme({
-            accentColor: '#00f2fe',
-            accentColorForeground: 'black',
-            borderRadius: 'medium',
-            overlayBlur: 'small',
-          })}
-        >
-          {children}
-        </RainbowKitProvider>
+        {mounted && (
+          <RainbowKitProvider
+            theme={darkTheme({
+              accentColor: '#00f2fe',
+              accentColorForeground: 'black',
+              borderRadius: 'medium',
+              overlayBlur: 'small',
+            })}
+          >
+            {children}
+          </RainbowKitProvider>
+        )}
       </QueryClientProvider>
     </WagmiProvider>
   );

@@ -1,129 +1,23 @@
 @import "tailwindcss";
 
-@import '@rainbow-me/rainbowkit/styles.css';
-
 @theme {
-  --color-background: hsl(240 10% 4%);
-  --color-foreground: hsl(0 0% 100%);
-  
-  --color-card: hsl(240 10% 6%);
-  --color-card-foreground: hsl(0 0% 100%);
-  
-  --color-primary-cyan: hsl(180 100% 50%);
-  --color-secondary-purple: hsl(280 100% 60%);
-  --color-accent-pink: hsl(330 100% 60%);
+  --color-bg-primary: #0f1117;
+  --color-bg-card: #1a1f2e;
+  --color-bg-elevated: #232839;
+  --color-border: #2e3548;
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #9ca3af;
+  --color-accent: #3b82f6;
+  --color-accent-hover: #2563eb;
+  --color-accent-disabled: #1d4ed8;
+  --color-green: #22c55e;
+  --color-yellow: #eab308;
+  --color-red: #ef4444;
 }
 
-:root {
-  --background: 240 10% 4%;
-  --foreground: 0 0% 100%;
-  
-  --card: 240 10% 6%;
-  --card-foreground: 0 0% 100%;
-  
-  --primary: 180 100% 50%;
-  --secondary: 280 100% 60%;
-  --accent: 330 100% 60%;
-  
-  --glass: rgba(255, 255, 255, 0.03);
-  --glass-border: rgba(255, 255, 255, 0.1);
-}
-
-body {
-  background-color: var(--color-background);
-  color: var(--color-foreground);
-  font-family: "Segoe UI", "Helvetica Neue", Arial, sans-serif;
-  overflow-x: hidden;
-}
-
-@utility glass-card {
-  background-color: rgba(255, 255, 255, 0.03);
-  backdrop-filter: blur(16px) saturate(180%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 1.25rem;
-  box-shadow: 
-    0 4px 6px -1px rgb(0 0 0 / 0.1),
-    0 2px 4px -2px rgb(0 0 0 / 0.1),
-    inset 0 1px 1px 0 rgba(255, 255, 255, 0.05);
-  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-
-  &:hover {
-    background-color: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.15);
-    transform: translateY(-2px);
-    box-shadow: 
-      0 20px 25px -5px rgb(0 0 0 / 0.2),
-      0 8px 10px -6px rgb(0 0 0 / 0.1),
-      0 0 20px -5px hsla(180, 100%, 50%, 0.1);
+@layer base {
+  body {
+    background-color: var(--color-bg-primary);
+    color: var(--color-text-primary);
   }
-}
-
-@utility glass-panel {
-  background-color: rgba(4, 4, 10, 0.7);
-  backdrop-filter: blur(20px) saturate(150%);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-@utility neon-text-primary {
-  text-shadow: 0 0 12px hsla(180, 100%, 50%, 0.4);
-}
-
-@utility neon-border-primary {
-  box-shadow: 0 0 20px hsla(180, 100%, 50%, 0.15);
-}
-
-@utility btn-primary {
-  background: linear-gradient(135deg, var(--color-primary-cyan), #00b4d8);
-  color: #000;
-  font-weight: 800;
-  padding: 0.625rem 1.75rem;
-  border-radius: 0.875rem;
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 8px 16px -4px rgba(6, 182, 212, 0.3);
-  letter-spacing: -0.01em;
-
-  &:hover {
-    filter: brightness(1.05);
-    transform: translateY(-1px);
-    box-shadow: 0 12px 20px -4px rgba(6, 182, 212, 0.4);
-  }
-
-  &:active {
-    transform: scale(0.96);
-  }
-}
-
-@utility gradient-text {
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  background-image: linear-gradient(135deg, #00f2fe 0%, #3b82f6 50%, #9333ea 100%);
-  font-weight: 800;
-  letter-spacing: -0.02em;
-}
-
-/* Custom Scrollbar */
-::-webkit-scrollbar {
-  width: 10px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--color-background);
-}
-
-::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 10px;
-  border: 2px solid var(--color-background);
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.15);
-}
-
-.gradient-bg {
-  background: 
-    radial-gradient(circle at 50% 0%, rgba(0, 242, 254, 0.08) 0%, transparent 50%),
-    radial-gradient(circle at 100% 100%, rgba(131, 58, 180, 0.05) 0%, transparent 50%),
-    radial-gradient(circle at 0% 100%, rgba(255, 0, 128, 0.03) 0%, transparent 40%);
 }

@@ -14,5 +14,5 @@ export const config = getDefaultConfig({
     [sepolia.id]: http(process.env.NEXT_PUBLIC_SEPOLIA_RPC_URL || 'https://go.getblock.io/4d71ff368a664d2ebccf9e359d8c7de6'),
     [baseSepolia.id]: http(process.env.NEXT_PUBLIC_BASE_SEPOLIA_RPC_URL || 'https://go.getblock.io/2f70d59587494874b59fb4a56a514fdd'),
   },
-  ssr: false,
+  ssr: true,
 });
